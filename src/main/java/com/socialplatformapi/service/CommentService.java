@@ -38,13 +38,7 @@ public class CommentService {
 
         Comment saved = commentRepository.save(comment);
 
-        return new CommentResponse(
-                saved.getId(),
-                saved.getCommentText(),
-                user.getUsername(),
-                post.getId(),
-                saved.getCommentDate()
-        );
+        return mapper.commentToDto(saved);
     }
 
     public CommentResponse updateComment(Long commentId, CommentUpdateRequest request, User user) {
