@@ -1,5 +1,6 @@
 package com.socialplatformapi.repository;
 
+import com.socialplatformapi.dto.comment.CommentSummary;
 import com.socialplatformapi.model.Comment;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +10,7 @@ import java.util.List;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
-    List<Comment> findAllByPostId(Long postId, Pageable pageable);
+    List<CommentSummary> findAllByPostId(Long postId, Pageable pageable);
     List<Comment> findAllByCommenterUsername(String username, Pageable pageable);
+    List<CommentSummary> findAllById(Long id, Pageable pageable);
 }

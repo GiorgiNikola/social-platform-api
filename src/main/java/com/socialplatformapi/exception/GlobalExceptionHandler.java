@@ -1,13 +1,11 @@
 package com.socialplatformapi.exception;
 
-import com.socialplatformapi.exception.auth.InvalidSessionTokenException;
-import com.socialplatformapi.exception.auth.MissingSessionTokenException;
-import com.socialplatformapi.exception.comment.CommentNotFoundException;
-import com.socialplatformapi.exception.post.InvalidAuthorException;
-import com.socialplatformapi.exception.post.PostNotExistsException;
-import com.socialplatformapi.exception.user.EmailAlreadyExistsException;
-import com.socialplatformapi.exception.auth.InvalidCredentialsException;
-import com.socialplatformapi.exception.user.UsernameAlreadyExistsException;
+import com.socialplatformapi.exception.auth.AuthenticationException;
+import com.socialplatformapi.exception.comment.CommentException;
+import com.socialplatformapi.exception.like.LikeException;
+import com.socialplatformapi.exception.post.PostException;
+import com.socialplatformapi.exception.user.RegistrationException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,78 +13,80 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UsernameAlreadyExistsException.class)
-    public ResponseEntity<String> usernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status,
+                                                      String message,
+                                                      HttpServletRequest request,
+                                                      Map<String, String> fieldErrors) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
+                .endpoint(request.getRequestURI())
+                .errors(fieldErrors)
+                .build();
+
+        return new ResponseEntity<>(errorResponse, status);
     }
 
-    @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<String> emailAlreadyExistsException(EmailAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message, HttpServletRequest request) {
+        return buildErrorResponse(status, message, request, null);
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<String> invalidCredentialsException(InvalidCredentialsException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthException(AuthenticationException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(MissingSessionTokenException.class)
-    public ResponseEntity<String> missingSessionTokenException(MissingSessionTokenException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+    @ExceptionHandler(CommentException.class)
+    public ResponseEntity<ErrorResponse> handleCommentException(CommentException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(InvalidSessionTokenException.class)
-    public ResponseEntity<String> invalidSessionTokenException(InvalidSessionTokenException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+    @ExceptionHandler(PostException.class)
+    public ResponseEntity<ErrorResponse> handlePostException(PostException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(InvalidAuthorException.class)
-    public ResponseEntity<String> invalidAuthorException(InvalidAuthorException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+    @ExceptionHandler(RegistrationException.class)
+    public ResponseEntity<ErrorResponse> handleRegistrationException(RegistrationException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(PostNotExistsException.class)
-    public ResponseEntity<String> postNotExistsException(PostNotExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    @ExceptionHandler(LikeException.class)
+    public ResponseEntity<ErrorResponse> handleLikeException(LikeException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Object> handleValidationException(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        Map<String, String> fieldErrors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                fieldErrors.put(error.getField(), error.getDefaultMessage())
+        );
 
-        ex.getBindingResult().getFieldErrors().forEach(error -> {
-            errors.put(error.getField(), error.getDefaultMessage());
-        });
-
-        return new ResponseEntity<>(Map.of("errors", errors), HttpStatus.BAD_REQUEST);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", request, fieldErrors);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+        Map<String, String> violations = new HashMap<>();
+        ex.getConstraintViolations().forEach(violation ->
+                violations.put(violation.getPropertyPath().toString(), violation.getMessage())
+        );
 
-        ex.getConstraintViolations().forEach(violation -> {
-            String field = violation.getPropertyPath().toString();
-            errors.put(field, violation.getMessage());
-        });
-
-        return new ResponseEntity<>(Map.of("errors", errors), HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(CommentNotFoundException.class)
-    public ResponseEntity<String> commentNotFoundException(CommentNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Constraint violation", request, violations);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGeneric(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Something went wrong: " + ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleAllOtherExceptions(Exception ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong: " + ex.getMessage(), request);
     }
 }

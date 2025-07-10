@@ -2,6 +2,7 @@ package com.socialplatformapi.controller;
 
 import com.socialplatformapi.dto.comment.CommentRequest;
 import com.socialplatformapi.dto.comment.CommentResponse;
+import com.socialplatformapi.dto.comment.CommentSummary;
 import com.socialplatformapi.dto.comment.CommentUpdateRequest;
 import com.socialplatformapi.service.AuthorizationService;
 import com.socialplatformapi.service.CommentService;
@@ -75,8 +76,8 @@ public class CommentController {
     }
 
     @GetMapping("/by-post/{postId}")
-    public List<CommentResponse> getCommentsByPost(@PathVariable Long postId,
-                                                   @RequestParam(defaultValue = "0") int page) {
+    public List<CommentSummary> getCommentsByPost(@PathVariable Long postId,
+                                                  @RequestParam(defaultValue = "0") int page) {
         return commentService.getCommentsByPost(postId, PageRequest.of(page, 10));
     }
 

@@ -9,17 +9,20 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class UserRegisterRequest {
-    @NotBlank(message = "First name is required")
+    @NotNull(message = "First name is required")
+    @Size(min = 2, max = 32, message = "Size of username should be between 2 and 32")
     private String firstName;
 
-    @NotBlank(message = "Last name is required")
+    @NotNull(message = "Last name is required")
+    @Size(min = 2, max = 64, message = "Size of username should be between 2 and 64")
     private String lastName;
 
-    @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 30, message = "Size of username should be between 3 and 30")
+    @NotNull(message = "Username is required")
+    @Size(min = 4, max = 16, message = "Size of username should be between 4 and 16")
     private String username;
 
     @NotNull(message = "Birth date is required")
+    @Past(message = "Birthdate must be in the past.")
     private LocalDate birthDate;
 
     @NotBlank(message = "email is required")

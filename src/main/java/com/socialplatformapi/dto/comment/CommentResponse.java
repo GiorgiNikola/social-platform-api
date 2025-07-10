@@ -1,5 +1,6 @@
 package com.socialplatformapi.dto.comment;
 
+import com.socialplatformapi.model.Comment;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,4 +16,14 @@ public class CommentResponse {
     private String commenterUsername;
     private Long postId;
     private LocalDateTime commentDate;
+
+    public static CommentResponse commentToDto(Comment comment) {
+        return new CommentResponse(
+                comment.getId(),
+                comment.getCommentText(),
+                comment.getCommenter().getUsername(),
+                comment.getPost().getId(),
+                comment.getCommentDate()
+        );
+    }
 }

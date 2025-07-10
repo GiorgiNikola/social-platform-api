@@ -21,11 +21,11 @@ public class Comment {
     @Column(name = "comment_date", nullable = false)
     private LocalDateTime commentDate;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "commenter_id", nullable = false)
     private User commenter;
 }

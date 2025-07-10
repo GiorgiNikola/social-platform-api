@@ -1,6 +1,6 @@
 package com.socialplatformapi.service;
 
-import com.socialplatformapi.exception.auth.MissingSessionTokenException;
+import com.socialplatformapi.exception.auth.AuthenticationException;
 import com.socialplatformapi.model.User;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
@@ -15,10 +15,10 @@ public class AuthorizationService {
         String token = request.getHeader("X-Session-Token");
 
         if (token == null) {
-            throw new MissingSessionTokenException();
+            throw new AuthenticationException("Missing session token");
         }
 
         return sessionService.getUserByToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired session token"));
+                .orElseThrow(() -> new AuthenticationException("Invalid or expired session token"));
     }
 }

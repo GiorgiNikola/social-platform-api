@@ -4,11 +4,13 @@ import com.socialplatformapi.dto.post.PostRequest;
 import com.socialplatformapi.dto.post.PostResponse;
 import com.socialplatformapi.model.Post;
 import com.socialplatformapi.service.AuthorizationService;
+import com.socialplatformapi.service.LikeService;
 import com.socialplatformapi.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.query.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +27,7 @@ public class PostController {
 
     private final PostService postService;
     private final AuthorizationService authorizationService;
+    private final LikeService likeService;
 
     @Operation(
             summary = "Create post",
@@ -34,7 +37,7 @@ public class PostController {
     )
     @PostMapping
     public PostResponse createPost(
-            @RequestBody PostRequest request,
+            @RequestBody @Valid PostRequest request,
             HttpServletRequest httpRequest) {
 
         var user = authorizationService.getLoggedInUser(httpRequest);
@@ -51,7 +54,7 @@ public class PostController {
     @PutMapping("/{id}")
     public PostResponse updatePost(
             @PathVariable Long id,
-            @RequestBody PostRequest request,
+            @RequestBody @Valid PostRequest request,
             HttpServletRequest httpRequest
     ) {
         var user = authorizationService.getLoggedInUser(httpRequest);
@@ -77,8 +80,12 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
-    public PostResponse getPost(@PathVariable Long id) {
-        return postService.getPostResponse(id);
+    public PostResponse getPost(@PathVariable Long id,
+                                @RequestParam(defaultValue = "0") int commentPage,
+                                @RequestParam(defaultValue = "0") int likePage) {
+        return postService.getPostResponse(id,
+                PageRequest.of(commentPage, 10),
+                PageRequest.of(likePage, 10));
     }
 
     @GetMapping
@@ -102,7 +109,7 @@ public class PostController {
     @PostMapping("/{id}/like")
     public ResponseEntity<String> likePost(@PathVariable Long id, HttpServletRequest request) {
         var user = authorizationService.getLoggedInUser(request);
-        postService.likePost(id, user);
+        likeService.likePost(id, user);
         return ResponseEntity.ok("Post liked");
     }
 
@@ -115,7 +122,7 @@ public class PostController {
     @DeleteMapping("/{id}/like")
     public ResponseEntity<String> unlikePost(@PathVariable Long id, HttpServletRequest request) {
         var user = authorizationService.getLoggedInUser(request);
-        postService.unlikePost(id, user);
+        likeService.unlikePost(id, user);
         return ResponseEntity.ok("Like removed");
     }
 
